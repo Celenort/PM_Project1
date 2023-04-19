@@ -25,7 +25,7 @@ void assignDirection(int& r, int& c, int direction);
 
 // (r,c)에서 입력받은 direction에 대해 탐색을 수행, 해당 방향에서 3-3에 관여하는 값(depth)를 반환
 // by default space = 0, cnt=0이며, space==2에서 탐색종료. 
-int search(int [][BOARD_SIZE], int r, int c, int direction, int& space, int& cnt);
+int search(int [][BOARD_SIZE], int r, int c, int direction, int& space, int& cnt, int mystone);
 
 bool isDoubleThree(int [][BOARD_SIZE], int r, int c);
 void place(int(&board)[][BOARD_SIZE], int r, int c, int stone);
@@ -129,106 +129,16 @@ void win(int board[][BOARD_SIZE], bool& isGameOver, int winner) { //Stone winner
 bool isFive(int boardinput[][BOARD_SIZE], int row, int col) {
     // check near boardinput[row][column] whether 5-in-a-row (win condition) is satisfied.
     int curr_stone = boardinput[row][col];
-
-
-    // code for checking row 5
-    int row_low = (row - 4) < 0 ? 0 : (row - 4);
-    int row_high = (row + 4) >= BOARD_SIZE ? BOARD_SIZE - 1 : row + 4;
-    int stack = 0;
-    for (int idx = row_low; idx <= row_high; idx++) {
-        if (boardinput[idx][col] == curr_stone) {
-            stack++;
-        }
-        else {
-            stack = 0;
-        }
-        if (stack >= 5) {
+    for (int i = 0; i < 4; i++) { // checking four directions
+        int cnt = 0;
+        int space = 1;
+        int left = search(boardinput, row, col, i, space, cnt, curr_stone);
+        space = 1;
+        int right = search(boardinput, row, col, (i + 4) % 8, space, cnt, curr_stone);
+        if (cnt >=4) {
             return true;
         }
     }
-
-
-    // code for checking col 5
-    stack = 0;
-    int col_low = (col - 4) < 0 ? 0 : col - 4;
-    int col_high = (col + 4) >= BOARD_SIZE ? BOARD_SIZE - 1 : col + 4;
-    for (int idx = col_low; idx <= col_high; idx++) {
-        if (boardinput[row][idx] == curr_stone) {
-            stack++;
-        }
-        else {
-            stack = 0;
-        }
-        if (stack >= 5) {
-            return true;
-        }
-    }
-
-
-    //code for checking left diagonal
-    stack = 0;
-    int upper_idx = -4;
-    int lower_idx = 4;
-    for (int i = 0; i > -5; i--) {
-        if (col + i < 0 || row + i < 0) {
-            // stop at i. 
-            upper_idx = i + 1;
-            break;
-        }
-    }
-    for (int i = 0; i < 5; i++) {
-        if (col + i >= BOARD_SIZE || row + i >= BOARD_SIZE) {
-            // stop at i. 
-            lower_idx = i - 1;
-            break;
-        }
-    }
-    // setted upper_idx, lower idx
-    for (int idx = upper_idx; idx <= lower_idx; idx++) {
-        if (boardinput[row + idx][col + idx] == curr_stone) {
-            stack++;
-        }
-        else {
-            stack = 0;
-        }
-        if (stack >= 5) {
-            return true;
-        }
-    }
-
-
-    // code for checking right diagonal
-    stack = 0;
-    upper_idx = 4;
-    lower_idx = -4;
-    for (int i = 0; i > -5; i--) {
-        if (col - i < 0 || row + i >= BOARD_SIZE) {
-            // stop at i. 
-            lower_idx = i + 1;
-            break;
-        }
-    }
-    for (int i = 0; i < 5; i++) {
-        if (col + i >= BOARD_SIZE || row - i < 0) {
-            // stop at i. 
-            upper_idx = i - 1;
-            break;
-        }
-    }
-    // setted upper_idx, lower idx
-    for (int idx = lower_idx; idx <= upper_idx; idx++) {
-        if (boardinput[row - idx][col + idx] == curr_stone) {
-            stack++;
-        }
-        else {
-            stack = 0;
-        }
-        if (stack >= 5) {
-            return true;
-        }
-    }
-    // divide : vertical / horizontal / left diagonal / right diagonal
-
     return false;
 }
 
@@ -267,7 +177,7 @@ void assignDirection(int& row, int& col, int direction) {
     }
 }
 
-int search(int boardinput[][BOARD_SIZE], int row, int col, int direction, int& space, int& cnt) {  // 초기에 space = 0을 넣어줌.
+int search(int boardinput[][BOARD_SIZE], int row, int col, int direction, int& space, int& cnt, int mystone) {  // 초기에 space = 0을 넣어줌.
     int searchdepth = 0;
     bool doublespace = false;
     while (space <= 1) {
@@ -284,7 +194,7 @@ int search(int boardinput[][BOARD_SIZE], int row, int col, int direction, int& s
             searchdepth--;
             break;
         }
-        else if (boardinput[row][col] == 1) { // ~~ == O
+        else if (boardinput[row][col] == -mystone) { // ~~ == O
             if (doublespace) {
                 space--;
             }
@@ -292,7 +202,7 @@ int search(int boardinput[][BOARD_SIZE], int row, int col, int direction, int& s
             searchdepth--;
             break;
         }
-        else if (boardinput[row][col] == -1) {  // ~~ == X
+        else if (boardinput[row][col] == mystone) {  // ~~ == X
             cnt++;
             doublespace = false;
         }
@@ -323,8 +233,8 @@ bool isDoubleThree(int boardinput[][BOARD_SIZE], int row, int col) {
     for (int i = 0; i < 4; i++) { // checking four directions
         int cnt = 0;
         int space = 0;
-        int left = search(boardinput, row, col, i, space, cnt);
-        int right = search(boardinput, row, col, (i + 4) % 8, space, cnt);
+        int left = search(boardinput, row, col, i, space, cnt, -1);
+        int right = search(boardinput, row, col, (i + 4) % 8, space, cnt, -1);
         bool blocked = false;
         if (cnt != 2) { // 33이 아니므로
             continue;

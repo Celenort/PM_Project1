@@ -206,7 +206,7 @@ int search(int boardinput[][BOARD_SIZE], int row, int col, int direction, int& s
             cnt++;
             doublespace = false;
         }
-        else if (boardinput[row][col] == 0) { // space
+        else { // space (boardinput[row][col] == 0) 
             if (!doublespace) {
                 space++;
                 doublespace = true;
@@ -297,15 +297,15 @@ bool isDoubleThree(int boardinput[][BOARD_SIZE], int row, int col) {
     }
 }
 
-void place(int(&boardinput)[][BOARD_SIZE], int row, int column, int stone) { // Stone stone
+void place(int(&boardinput)[][BOARD_SIZE], int row, int col, int stone) { // Stone stone
     //Assume that every constriants are satisfied before entering this function.
-    boardinput[row][column] = stone;
+    boardinput[row][col] = stone;
     return;
 }
 
-bool isOccupied(int boardinput[][BOARD_SIZE], int row, int column) {
+bool isOccupied(int boardinput[][BOARD_SIZE], int row, int col) {
     //if board[row][column] is occupied, return true. False if not.
-    return (boardinput[row][column] == 0) ? false : true;
+    return (boardinput[row][col] == 0) ? false : true;
 }
 
 bool interpret_and_Place(int boardinput[][BOARD_SIZE], string userInput, int whosTurn, bool& isGameOver) { // Stone whosTurn
@@ -316,7 +316,7 @@ bool interpret_and_Place(int boardinput[][BOARD_SIZE], string userInput, int who
         wrongInput();
         return false;
     }
-    int column = userInput[0] - 'a';
+    int col = userInput[0] - 'a';
     int row;
     try {
         row = stoi(userInput.substr(1)) - 1;
@@ -325,24 +325,24 @@ bool interpret_and_Place(int boardinput[][BOARD_SIZE], string userInput, int who
         wrongInput();
         return false;
     }
-    if (column < 0 || column >26) { // char -> int로 변환하여 'a' ~ 'z' 벗어남.
+    if (col < 0 || col >26) { // char -> int로 변환하여 'a' ~ 'z' 벗어남.
         wrongInput();
         return false;
     }
-    else if (column >= BOARD_SIZE || row >= BOARD_SIZE || row < 0) {
+    else if (col >= BOARD_SIZE || row >= BOARD_SIZE || row < 0) {
         outOfRange();
         return false;
     }
-    else if (isOccupied(boardinput, row, column)) {
+    else if (isOccupied(boardinput, row, col)) {
         placeOccupied();
         return false;
     }
-    else if (whosTurn == -1 && isDoubleThree(boardinput, row, column)) {
+    else if (whosTurn == -1 && isDoubleThree(boardinput, row, col)) {
         doubleThree();
         return false;
     }
-    boardinput[row % BOARD_SIZE][column % BOARD_SIZE] = whosTurn;
-    if (isFive(boardinput, row, column)) {
+    boardinput[row % BOARD_SIZE][col % BOARD_SIZE] = whosTurn;
+    if (isFive(boardinput, row, col)) {
         win(boardinput, isGameOver, whosTurn);
         return true;
     }

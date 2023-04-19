@@ -2,10 +2,10 @@
 #include <iostream>
 #include <string>
 
-enum Stone {
-    O=1,
-    X=-1
-};
+//enum Stone { // Enum을 사용할 수 있는지 몰라서 int로 취급하고 0인 경우 빈공간, O는 1, X는 -1취급했습니다.
+//    O=1,
+//    X=-1
+//};
 
 
 using namespace std;
@@ -24,10 +24,10 @@ void visualize(int boardinput[][BOARD_SIZE]) {
 
         for (int j = 0; j < BOARD_SIZE; j++) {
             switch (boardinput[i][j]) {
-                case X: 
+                case -1: // case X: 
                     cout << "X ";
                     break;
-                case O:
+                case 1: // case O:
                     cout << "O ";
                     break;
                 default:
@@ -58,12 +58,12 @@ void doubleThree() {
     return;
 }
 
-void win(int board[][BOARD_SIZE], bool& isGameOver, Stone winner) {
+void win(int board[][BOARD_SIZE], bool& isGameOver, int winner) { //Stone winner
     visualize(board);
-    if (winner == X) {
+    if (winner == -1) { // winner == X
         cout << "X wins!\n";
     }
-    else if (winner == O) {
+    else if (winner == 1) { //winner == O
         cout << "O wins!\n";
     }
     isGameOver = true;
@@ -223,15 +223,21 @@ int search(int boardinput[][BOARD_SIZE], int row, int col, int direction, int& s
         //checks if the current row or col is out of board
         if (row >= BOARD_SIZE || row < 0 || col >= BOARD_SIZE || col < 0) {
             //revert changes
+            if (doublespace) {
+                space--;
+            }
             assignDirection(row, col, (direction + 4) % 8);
             searchdepth--;
             break;
         }
-        else if (boardinput[row][col] == O) {
+        else if (boardinput[row][col] == 1) { // ~~ == O
+            if (doublespace) {
+                space--;
+            }
             assignDirection(row, col, (direction + 4) % 8);
             searchdepth--;
             break;
-        } else if (boardinput[row][col] == X) { 
+        } else if (boardinput[row][col] == -1) {  // ~~ == X
             cnt++;
             doublespace = false;
         }
@@ -265,6 +271,7 @@ bool isDoubleThree(int boardinput[][BOARD_SIZE], int row, int col) {
         int space = 0;
         int left = search(boardinput, row, col, i, space, cnt);
         int right = search(boardinput, row, col, (i + 4) % 8, space, cnt);
+        bool blocked = false;
         if (cnt != 2) { // 33이 아니므로
             continue;
         }
@@ -276,12 +283,20 @@ bool isDoubleThree(int boardinput[][BOARD_SIZE], int row, int col) {
             left--;
         }
         if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) {
+            assignDirection(r, c, (i+4)%8);
+            if (boardinput[r][c] != 0) {
+                continue;
+            }
+            blocked = true;
+
             //boundary에 걸린 경우 open 3이 아님
-            continue;
         }
-        else if (boardinput[r][c] == O) {
-            //다른말이 있는 경우. open3이 아님
-            continue;
+        else if (boardinput[r][c] == 1) { // ~~ == O
+            assignDirection(r, c, (i + 4) % 8);
+            if (boardinput[r][c] != 0) {
+                continue;
+            }
+            blocked = true;
         }
         // now check right boundary
         r = row;
@@ -291,12 +306,22 @@ bool isDoubleThree(int boardinput[][BOARD_SIZE], int row, int col) {
             right--;
         }
         if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) {
-            //boundary에 걸린 경우 open 3이 아님
-            continue;
+            assignDirection(r, c, (i + 4) % 8);
+            if (boardinput[r][c] != 0) {
+                continue;
+            }
+            if (blocked) {
+                continue;
+            }
         }
-        else if (boardinput[r][c] == O) {
-            //다른말이 있는 경우. open3이 아님
-            continue;
+        else if (boardinput[r][c] == 1) { // ~~ == O
+            assignDirection(r, c, (i + 4) % 8);
+            if (boardinput[r][c] != 0) {
+                continue;
+            }
+            if (blocked) {
+                continue;
+            }
         }
         doublethreecount++;
     }
@@ -311,7 +336,7 @@ bool isDoubleThree(int boardinput[][BOARD_SIZE], int row, int col) {
 
 
 
-void place(int (&boardinput)[][BOARD_SIZE], int row, int column, Stone stone) {
+void place(int (&boardinput)[][BOARD_SIZE], int row, int column, int stone) { // Stone stone
     //Assume that every constriants are satisfied before entering this function.
     boardinput[row][column] = stone;
     return;
@@ -322,7 +347,7 @@ bool isOccupied(int boardinput[][BOARD_SIZE], int row, int column) {
     return (boardinput[row][column] == 0) ? false : true ;
 }
 
-bool interpret_and_Place(int boardinput[][BOARD_SIZE], string userInput, Stone whosTurn, bool& isGameOver) {
+bool interpret_and_Place(int boardinput[][BOARD_SIZE], string userInput, int whosTurn, bool& isGameOver) { // Stone whosTurn
     //returns 1 if successfully interpreted and placed stone.
     //returns 0 if not. (wrong position, already occupied, or else)
     //interpret user input.
@@ -339,7 +364,7 @@ bool interpret_and_Place(int boardinput[][BOARD_SIZE], string userInput, Stone w
         wrongInput();
         return false;
     }
-    if (column < 0) { // outofrange인지 border문제인지 밝혀야함.
+    if (column < 0 || column >26) { // char -> int로 변환하여 'a' ~ 'z' 벗어남.
         wrongInput();
         return false;
     }
@@ -370,7 +395,7 @@ int main()
 
     string input;
     bool isGameOver = false;
-    Stone turn = X;
+    int turn = -1; // Stone turn = X;
     int board[BOARD_SIZE][BOARD_SIZE] = { 0 };
 
 
@@ -379,19 +404,19 @@ int main()
     while (!isGameOver) {
         visualize(board);
 
-        if (turn == X) {
+        if (turn == -1) { // // ~~ == X
             do {
                 cout << "player " << "X" << " : ";
                 cin >> input;
-            } while (!interpret_and_Place(board, input, X, isGameOver));
-            turn = O;
+            } while (!interpret_and_Place(board, input, -1, isGameOver));
+            turn = 1; // turn = O;
         }
         else {
             do {
                 cout << "player " << "O" << " : ";
                 cin >> input;
-            } while (!interpret_and_Place(board, input, O, isGameOver));
-            turn = X;
+            } while (!interpret_and_Place(board, input, 1, isGameOver));
+            turn = -1;
         }
     }
     //if the flow of code is here, it means game is over.

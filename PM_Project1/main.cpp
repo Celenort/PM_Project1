@@ -25,10 +25,10 @@ void assignDirection(int& r, int& c, int direction);
 
 // (r,c)에서 입력받은 direction에 대해 탐색을 수행, 해당 방향에서 3-3에 관여하는 값(depth)를 반환
 // by default space = 0, cnt=0이며, space==2에서 탐색종료. 
-int search(int [][BOARD_SIZE], int r, int c, int direction, int& space, int& cnt, int mystone);
+void search(int [][BOARD_SIZE], int r, int c, int direction, int& space, int& cnt, int mystone);
 
 bool isDoubleThree(int [][BOARD_SIZE], int r, int c);
-void place(int(&board)[][BOARD_SIZE], int r, int c, int stone);
+void place(int board[][BOARD_SIZE], int r, int c, int stone);
 bool isOccupied(int [][BOARD_SIZE], int r, int c);
 // main()에서 do{} while();에서 while문 내부에 들어가 사용되며, 
 // OutofBorder, WrongInput, Occupied, doubleThree의 4가지 실패조건 처리후 모두 만족시 place.
@@ -132,9 +132,9 @@ bool isFive(int boardinput[][BOARD_SIZE], int row, int col) {
     for (int i = 0; i < 4; i++) { // checking four directions
         int cnt = 0;
         int space = 1;
-        int left = search(boardinput, row, col, i, space, cnt, curr_stone);
+        search(boardinput, row, col, i, space, cnt, curr_stone);
         space = 1;
-        int right = search(boardinput, row, col, (i + 4) % 8, space, cnt, curr_stone);
+        search(boardinput, row, col, (i + 4) % 8, space, cnt, curr_stone);
         if (cnt >=4) {
             return true;
         }
@@ -177,29 +177,22 @@ void assignDirection(int& row, int& col, int direction) {
     }
 }
 
-int search(int boardinput[][BOARD_SIZE], int row, int col, int direction, int& space, int& cnt, int mystone) {  // 초기에 space = 0을 넣어줌.
-    int searchdepth = 0;
+void search(int boardinput[][BOARD_SIZE], int row, int col, int direction, int& space, int& cnt, int mystone) {  // 초기에 space = 0을 넣어줌.
     bool doublespace = false;
     while (space <= 1) {
 
         assignDirection(row, col, direction);
-        searchdepth++;
         //checks if the current row or col is out of board
         if (row >= BOARD_SIZE || row < 0 || col >= BOARD_SIZE || col < 0) {
-            //revert changes
             if (doublespace) {
                 space--;
             }
-            assignDirection(row, col, (direction + 4) % 8);
-            searchdepth--;
             break;
         }
         else if (boardinput[row][col] == -mystone) { // ~~ == O
             if (doublespace) {
                 space--;
             }
-            assignDirection(row, col, (direction + 4) % 8);
-            searchdepth--;
             break;
         }
         else if (boardinput[row][col] == mystone) {  // ~~ == X
@@ -208,84 +201,68 @@ int search(int boardinput[][BOARD_SIZE], int row, int col, int direction, int& s
         }
         else { // space (boardinput[row][col] == 0) 
             if (!doublespace) {
-                space++;
                 doublespace = true;
-                if (space == 2) { // if two spaces encountered : exit.
-                    space--;
-                    searchdepth--;
-                    assignDirection(row, col, (direction + 4) % 8);
-                    break;
-                }
             }
             else { // double space : exit
                 space--;
-                searchdepth--;
-                assignDirection(row, col, (direction + 4) % 8);
+                break;
+            }
+            if (space == 0) {
+                space++;
+            }
+            else {
                 break;
             }
         }
     }
-    return searchdepth;
 }
 
 bool isDoubleThree(int boardinput[][BOARD_SIZE], int row, int col) {
     int doublethreecount = 0;
     for (int i = 0; i < 4; i++) { // checking four directions
-        int cnt = 0;
-        int space = 0;
-        int left = search(boardinput, row, col, i, space, cnt, -1);
-        int right = search(boardinput, row, col, (i + 4) % 8, space, cnt, -1);
+        int leftcnt = 0;
+        int rightcnt = 0;
+        int leftspace = 0;
+        int rightspace = 0;
+        search(boardinput, row, col, i, leftspace, leftcnt, -1);
+        rightspace = leftspace;
+        search(boardinput, row, col, (i + 4) % 8, rightspace, rightcnt, -1);
         bool blocked = false;
-        if (cnt != 2) { // 33이 아니므로
+        if (leftcnt+rightcnt != 2) { // 33이 아니므로
             continue;
         }
         //check left boundary
+        int le = leftcnt + leftspace;
+        int ri = rightcnt + rightspace;
         int r = row;
         int c = col;
-        while (left >= 0) { // >=0이므로 최종 서치한 그 다음 자리에 대해 조사.
+        while (le >= 0) { // >=0이므로 최종 서치한 그 다음 자리에 대해 조사.
             assignDirection(r, c, i);
-            left--;
+            le--;
         }
         if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) {
             assignDirection(r, c, (i + 4) % 8);
-            if (boardinput[r][c] != 0) {
-                continue;
-            }
-            blocked = true;
-
+            continue;
             //boundary에 걸린 경우 open 3이 아님
         }
         else if (boardinput[r][c] == 1) { // ~~ == O
             assignDirection(r, c, (i + 4) % 8);
-            if (boardinput[r][c] != 0) {
-                continue;
-            }
-            blocked = true;
+            continue;
         }
         // now check right boundary
         r = row;
         c = col;
-        while (right >= 0) { // >=0이므로 최종 서치한 그 다음 자리에 대해 조사.
+        while (ri >= 0) { // >=0이므로 최종 서치한 그 다음 자리에 대해 조사.
             assignDirection(r, c, (i + 4) % 8);
-            right--;
+            ri--;
         }
         if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) {
             assignDirection(r, c, (i + 4) % 8);
-            if (boardinput[r][c] != 0) {
-                continue;
-            }
-            if (blocked) {
-                continue;
-            }
+            continue;
         }
         else if (boardinput[r][c] == 1) { // ~~ == O
             assignDirection(r, c, (i + 4) % 8);
-            if (boardinput[r][c] != 0) {
-                continue;
-            }
-            if (blocked) {
-                continue;
-            }
+            continue;
         }
         doublethreecount++;
     }
@@ -297,7 +274,7 @@ bool isDoubleThree(int boardinput[][BOARD_SIZE], int row, int col) {
     }
 }
 
-void place(int(&boardinput)[][BOARD_SIZE], int row, int col, int stone) { // Stone stone
+void place(int boardinput[][BOARD_SIZE], int row, int col, int stone) { // Stone stone
     //Assume that every constriants are satisfied before entering this function.
     boardinput[row][col] = stone;
     return;
@@ -341,7 +318,7 @@ bool interpret_and_Place(int boardinput[][BOARD_SIZE], string userInput, int who
         doubleThree();
         return false;
     }
-    boardinput[row % BOARD_SIZE][col % BOARD_SIZE] = whosTurn;
+    place(boardinput, row, col, whosTurn);
     if (isFive(boardinput, row, col)) {
         win(boardinput, isGameOver, whosTurn);
         return true;
